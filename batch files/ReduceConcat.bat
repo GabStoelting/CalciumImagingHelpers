@@ -1,14 +1,15 @@
+cls
 @echo off
-call C:\Users\Gabriel\Anaconda3\Scripts\activate.bat C:\Users\Gabriel\Anaconda3
-
+call C:\Users\stoeltig\AppData\Local\Continuum\anaconda3\Scripts\activate.bat C:\Users\stoeltig\AppData\Local\Continuum\anaconda3\
 set start=-b 2
 
 :loop 
-if "%1"=="" goto :done
-set start=%start% -i %1
+set "start=%start% -i %1"
 shift
+if [%1]==[] goto :done
 goto :loop
 
 :done
-python "C:\Users\Gabriel\Documents\Python Scripts\CalciumImagingHelpers\ReduceConcat.py" %start%
+
+python D:\Gabriel\Python\CalciumImagingHelpers\ReduceConcat.py %start%
 pause

@@ -110,8 +110,8 @@ with tf.TiffWriter(filelist[0]+"_concat.tif", bigtiff=True) as outtif: # Save ra
                 
     
                 i=i+d
-            except:
-                print("\nEnd.")
+            except ValueError:
+                print("\nEnd.",ValueError)
                 break
 
 outtif.close()        
