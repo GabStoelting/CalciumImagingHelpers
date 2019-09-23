@@ -17,6 +17,8 @@ import numpy as np
 import tifffile as tf
 import time
 import argparse
+from natsort import natsorted
+
 
 
 
@@ -73,6 +75,7 @@ parser.add_argument('-b', '--binning', help="bxb pixels are averaged", required=
 args = parser.parse_args()
 
 filelist = args.input
+filelist = natsorted(filelist)
 
 binning = int(args.binning)
 
@@ -110,8 +113,8 @@ with tf.TiffWriter(filelist[0]+"_concat.tif", bigtiff=True) as outtif: # Save ra
                 
     
                 i=i+d
-            except ValueError:
-                print("\nEnd.",ValueError)
+            except:
+                print("\nEnd.")
                 break
 
 outtif.close()        
