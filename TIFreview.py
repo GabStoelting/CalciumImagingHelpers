@@ -11,6 +11,7 @@ import pygame as pg
 import tifffile as tf
 import time
 import argparse
+from natsort import natsorted
 
 
 
@@ -24,7 +25,8 @@ def gray(im):
 
 # Get information from commandline arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="list of input TIFF files", action="append", required=True)
+parser.add_argument('-i', '--input', help="list of input TIFF files", \
+                                        action="append", required=True)
 parser.add_argument('-d', '--downsampling', help="only show every n-th frame")
 parser.add_argument('-s', '--startframe', help="select first frame for display")
 
@@ -35,13 +37,14 @@ if(args.downsampling):
     d = int(args.downsampling)
 else:
     d = 1
-    
+
 if(args.startframe):
     sf = int(args.startframe)
 else:
-    sf = 0   
+    sf = 0
 
 filelist = args.input
+filelist = natsorted(filelist)
 
 try:
     image = tf.imread(filelist[0], key=0)
@@ -58,7 +61,7 @@ running = True
 # Iterate through all files
 for filename in filelist:
     i = sf
-        
+
     while running:
         try:
             image = tf.imread(filename, key=i)

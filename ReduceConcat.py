@@ -19,23 +19,12 @@ import time
 import argparse
 from natsort import natsorted
 
-
-
-
-def gray(im):
-    # Converts a numpy array (im) into a grayscale image for a pygame surface
-    im = 255 * (im / im.max())
-    w, h = im.shape
-    ret = np.empty((w, h, 3), dtype=np.uint8)
-    ret[:, :, 2] = ret[:, :, 1] = ret[:, :, 0] = im
-    return ret
-
 def bin_ndarray(ndarray, new_shape, operation='sum'):
     """
     Bins an ndarray in all axes based on the target shape, by summing or
         averaging.
 
-    Number of output dimensions must match number of input dimensions and 
+    Number of output dimensions must match number of input dimensions and
         new axes must divide old ones.
 
     Example
@@ -68,8 +57,10 @@ def bin_ndarray(ndarray, new_shape, operation='sum'):
 
 # Get information from commandline arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="input TIFF file (you may add more than one)", action="append", required=True)
-parser.add_argument('-b', '--binning', help="bxb pixels are averaged", required=True)
+parser.add_argument('-i', '--input', help="input TIFF file (you may add more \
+than one)", action="append", required=True)
+parser.add_argument('-b', '--binning', help="bxb pixels are averaged", \
+                    required=True)
 
 
 args = parser.parse_args()
@@ -86,35 +77,45 @@ try:
 except:
     print("Couldn't open"+filelist[0])
     quit()
-    
+
 print(width, height)
 
 running = True
 d = 1
-
+file_i = 1
 # Iterate through all files
 #
 # Make sure this works when spanning over multiple files!
 
-with tf.TiffWriter(filelist[0]+"_concat.tif", bigtiff=True) as outtif: # Save ratio images into this file
-    
+# Save ratio images into this file
+with tf.TiffWriter(filelist[0]+"_concat.tif", bigtiff=True) as outtif:
+
     # Iterate through all files
     for filename in filelist:
         i = 0
-            
+
         while running:
             try:
-                print("\rConverting frame {} from {} x {} px to {} x {} px".format(i, width, height, width/2, height/2)) # Print status message
+                # Print status message
+                print("\rFile {}/{}, converting frame {} from {} x {} px to \
+                {} x {} px".format(file_i, len(filelist), i, width, \
+                height, width/2, height/2), end="")
+
                 image = tf.imread(filename, key=i)
-                image = bin_ndarray(image, new_shape=(int(height/binning), int(width/binning)), operation="mean")             
+
+                image = bin_ndarray(image, new_shape=(int(height/binning), \
+                int(width/binning)), operation="mean")
+
                 #image = gray(image)
                 image = image.astype("uint16")
                 outtif.save(image, compress=6)
-                
-    
+
+
                 i=i+d
+
             except:
                 print("\nEnd.")
                 break
+        file_i += 1
 
-outtif.close()        
+outtif.close()
