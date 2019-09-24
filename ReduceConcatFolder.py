@@ -57,19 +57,17 @@ def bin_ndarray(ndarray, new_shape, operation='sum'):
     return ndarray
 
 # Get information from commandline arguments
-#parser = argparse.ArgumentParser()
-#parser.add_argument('-i', '--input', help="input TIFF file (you may add more \
-#than one)", required=True)
-#parser.add_argument('-b', '--binning', help="bxb pixels are averaged", \
-#                    required=True)
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--input', help="input TIFF file (you may add more \
+than one)", required=True)
+parser.add_argument('-b', '--binning', help="bxb pixels are averaged", \
+                    required=True)
 
 
-#args = parser.parse_args()
+args = parser.parse_args()
 
-#directory = args.input
-directory = "G:\\Ca2+ Imaging\\02nov18 NNR Calbryte 520 AM"
-binning = 2
-#binning = int(args.binning)
+directory = args.input
+binning = int(args.binning)
 
 for subdir, dirs, files in os.walk(directory):
     print("----")
