@@ -70,8 +70,6 @@ directory = args.input
 binning = int(args.binning)
 
 for subdir, dirs, files in os.walk(directory):
-    print("----")
-    print(subdir, dirs)
     filelist = []
 
     for file in files:
@@ -83,7 +81,6 @@ for subdir, dirs, files in os.walk(directory):
 
     if(len(filelist)>1):
         filelist = natsorted(filelist) # sort if more than one
-        print(filelist)
         try:
             image = tf.imread(filelist[0], key=0)
             height, width = image.shape
