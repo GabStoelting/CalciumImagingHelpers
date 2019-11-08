@@ -8,7 +8,6 @@ Created on Wed Apr 17 18:26:16 2019
 
 import numpy as np
 import tifffile as tf
-import time
 import argparse
 from cv2 import VideoWriter, VideoWriter_fourcc
 import os
@@ -16,7 +15,8 @@ from natsort import natsorted
 
 
 def gray(im):
-    # Converts a numpy array (im) into a grayscale image for a pygame surface
+    # Converts a numpy array (im) into a grayscale RGB image
+    # into a pygame surface
     im = 255 * (im / im.max())
     w, h = im.shape
     ret = np.empty((w, h, 3), dtype=np.uint8)
@@ -26,30 +26,33 @@ def gray(im):
 
 # Get information from commandline arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="directory with TIFF files", required=True)
-parser.add_argument('-o', '--output', help="output TIFF file", required=True)
+parser.add_argument('-i', '--input', help="directory with TIFF files",
+                    required=True)
 parser.add_argument('-d', '--downsampling', help="only show every n-th frame")
 parser.add_argument('-s', '--startframe', help="select first frame")
 parser.add_argument('-c', '--codec', help="set the four letter video codec")
-parser.add_argument
 
 args = parser.parse_args()
 
+# Check if the downsampling parameter is set, otherwise convert every frame
 if(args.downsampling):
     d = int(args.downsampling)
 else:
     d = 1
 
+# Check if the conversion should start at a specified frame, otherwise start
+# at frame 1
 if(args.startframe):
     sf = int(args.startframe)
 else:
     sf = 0
 
 directory = args.input
+if(os.path.isdir(directory) is False):
+    print(directory, "is not a directory.")
+    quit()
 
-
-# Initialize cv2
-
+# Check if a codec is specified, otherwise use "MP42"
 if(args.codec):
     fourcc = VideoWriter_fourcc(*str(args.codec))
 else:
@@ -58,6 +61,7 @@ else:
 
 running = True
 
+# Search through the specified directory
 for subdir, dirs, files in os.walk(directory):
     filelist = []
 
@@ -65,20 +69,27 @@ for subdir, dirs, files in os.walk(directory):
         # print os.path.join(subdir, file)
         filepath = subdir + os.sep + file
 
+        # Append .tif or .tiff files to file list
         if filepath.endswith(".tif") or filepath.endswith(".tiff"):
-            filelist.append(filepath)  # append to filelist
+            filelist.append(filepath)
 
     if(len(filelist) > 1):
+        # Sort the filelist using natsorted to get the correct
+        # order of the files. Unfortunately, Micro-Manager doesn't
+        # name the first file with a _1 or _0 but rather without a number
+        # which makes the first file come last in many other ordering
+        # algorithms.
         filelist = natsorted(filelist)  # sort if more than one
         try:
             image = tf.imread(filelist[0], key=0)
             height, width = image.shape
-        except:
-            print("Couldn't open"+filelist[0])
+        except e:
+            print("Couldn't open"+filelist[0], e)
             quit()
 
         print(width, height)
-        out = VideoWriter(filelist[0]+"_concat.avi", fourcc, 10.0, (width, height))
+        out = VideoWriter(filelist[0]+"_concat.avi", fourcc, 10.0,
+                          (width, height))
 
         running = True
         d = 1
@@ -90,7 +101,8 @@ for subdir, dirs, files in os.walk(directory):
 
             while running:
                 try:
-                    print("\rConverting frame", i, end="")  # Print status message
+                    # Print status message
+                    print("\rConverting frame", i, end="")
                     image = tf.imread(filename, key=i)
                     image = gray(image)
                     print(image.shape, image.dtype)
