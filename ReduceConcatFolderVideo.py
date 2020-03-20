@@ -1,18 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep  3 07:10:00 2019
-
-@author: Gabriel
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 17 18:26:16 2019
-
-@author: Gabriel
-"""
-
-
 
 
 import argparse
@@ -21,41 +6,15 @@ import numpy as np
 import tifffile as tf
 from natsort import natsorted
 from cv2 import VideoWriter, VideoWriter_fourcc
-def bin_ndarray(ndarray, new_shape, operation='sum'):
-    """
-    Bins an ndarray in all axes based on the target shape, by summing or
-        averaging.
+import time
 
-    Number of output dimensions must match number of input dimensions and
-        new axes must divide old ones.
-
-    Example
-    -------
-    >>> m = np.arange(0,100,1).reshape((10,10))
-    >>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
-    >>> print(n)
-
-    [[ 22  30  38  46  54]
-     [102 110 118 126 134]
-     [182 190 198 206 214]
-     [262 270 278 286 294]
-     [342 350 358 366 374]]
-
-    """
-    operation = operation.lower()
-    if not operation in ['sum', 'mean']:
-        raise ValueError("Operation not supported.")
-    if ndarray.ndim != len(new_shape):
-        raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
-                                                           new_shape))
-    compression_pairs = [(d, c//d) for d, c in zip(new_shape,
-                                                   ndarray.shape)]
-    flattened = [l for p in compression_pairs for l in p]
-    ndarray = ndarray.reshape(flattened)
-    for i in range(len(new_shape)):
-        op = getattr(ndarray, operation)
-        ndarray = op(-1*(i+1))
-    return ndarray
+def array_binning(a, n: int = 2):
+    if n % 2 != 0:
+        raise ValueError("The binning coefficient must be a multiple of 2.")
+    for i in range(n // 2):
+        a = a[::, ::2] + a[::, 1::2]
+        a = a[::2, ::] + a[1::2, ::]
+    return a
 
 
 def gray(im):
@@ -129,42 +88,57 @@ for subdir, dirs, files in os.walk(directory):
                              (int(width/binning), int(height/binning)))
 
         # Save ratio images into this file
+        runtime = [0, 0, 0, 0, 0]
         with tf.TiffWriter(filelist[0]+"_concat.tif", bigtiff=True) as outtif:
 
             # Iterate through all files
             for filename in filelist:
+                t_start = time.time()
                 print(filename)
                 i = 0
 
                 while running:
                     try:
-                        # Print status message
-                        print("File {}/{}, converting frame {} from {} x {} px to \
-                        {} x {} px".format(file_i, len(filelist), i, width,
-                                           height, width/2, height/2))
-
+                        t_0 = time.time()
                         image = tf.imread(filename, key=i)
+                        t_1 = time.time()
 
                         # Reduce dimensions of images
-                        image = bin_ndarray(image, new_shape=(int(height/binning),
-                                                              int(width/binning)), operation="sum")
+                        image = array_binning(image, binning)
+                        t_2 = time.time()
+
                         # Write frame to video
                         outavi.write(gray(image))
+                        t_3 = time.time()
 
                         # Convert frame to 16bit integer for TIF
                         image = image.astype("uint16")
-                        outtif.save(image, compress=6)
-
+                        outtif.save(image, compress=0, photometric='minisblack')
+                        t_4 = time.time()
                         i = i+d
 
+
                     except IndexError:
-                        print("\nReached end of file.")
                         break
                     except Exception as e:
                         print(e)
                         break
 
+                    # Print status message
+                    print(f"File {file_i}/{len(filelist)}, converting frame {i}")
+                    t_5 = time.time()
+                    print(f"imread: {t_1-t_0}, binning: {t_2-t_1}, avi: {t_3-t_2}, tiff: {t_4-t_3}, total {t_5-t_0}")
+                    runtime[0] += 1
+                    runtime[1] += t_1-t_0
+                    runtime[2] += t_2-t_1
+                    runtime[3] += t_3-t_2
+                    runtime[4] += t_4-t_3
+                print(f"File total: {time.time()-t_start}")
                 file_i += 1
 
-        outtif.close()
-        outavi.release()
+print(runtime)
+print(f"i: {runtime[0]} imread: {runtime[1]}, binning: {runtime[2]}, avi: {runtime[3]}, "
+      f"tiff: {runtime[4]}, total {runtime[1]+runtime[2]+runtime[3]+runtime[4]}")
+
+outtif.close()
+outavi.release()
